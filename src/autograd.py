@@ -65,6 +65,80 @@ class Tensor:
         out._backward = _backward
         return out
 
+    def tanh(self):
+        t = np.tanh(self.data)
+        out = Tensor(t, (self,))
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+        out._backward = _backward
+        return out
+
+    def sum(self, axis=None, keepdims=False):
+        out = Tensor(self.data.sum(axis=axis, keepdims=keepdims), (self,))
+
+        def _backward():
+            g = out.grad
+            if axis is not None and not keepdims:
+                g = np.expand_dims(g, axis)
+            self.grad += np.ones_like(self.data) * g
+        out._backward = _backward
+        return out
+
+    def softmax(self, axis=-1):
+        z = self.data - self.data.max(axis=axis, keepdims=True)
+        e = np.exp(z)
+        p = e / e.sum(axis=axis, keepdims=True)
+        out = Tensor(p, (self,))
+
+        def _backward():
+            s = (out.grad * p).sum(axis=axis, keepdims=True)
+            self.grad += p * (out.grad - s)
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = np.exp(np.clip(self.data, -30, 30))
+        out = Tensor(e, (self,))
+
+        def _backward():
+            self.grad += e * out.grad
+        out._backward = _backward
+        return out
+
+    def sigmoid(self):
+        s = 1.0 / (1.0 + np.exp(-np.clip(self.data, -30, 30)))
+        out = Tensor(s, (self,))
+
+        def _backward():
+            self.grad += s * (1 - s) * out.grad
+        out._backward = _backward
+        return out
+
+    def log(self):
+        out = Tensor(np.log(self.data + 1e-12), (self,))
+
+        def _backward():
+            self.grad += out.grad / (self.data + 1e-12)
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1.0
+
+    def __sub__(self, other):
+        other = other if isinstance(other, Tensor) else Tensor(other)
+        return self + (-other)
+
+    def transpose(self, axes):
+        out = Tensor(np.transpose(self.data, axes), (self,))
+        inv = np.argsort(axes)
+
+        def _backward():
+            self.grad += np.transpose(out.grad, inv)
+        out._backward = _backward
+        return out
+
     # --- graph walk -----------------------------------------------------
     def backward(self):
         topo, seen = [], set()
@@ -79,3 +153,14 @@ class Tensor:
         self.grad = np.ones_like(self.data)
         for v in reversed(topo):
             v._backward()
+
+
+def cross_entropy(logits, targets):
+    """Mean softmax cross-entropy. logits: Tensor (N, C); targets: int array."""
+    probs = logits.softmax(axis=-1)
+    n = logits.data.shape[0]
+    onehot = np.zeros_like(logits.data)
+    onehot[np.arange(n), targets] = 1.0
+    nll = (probs.log() * Tensor(-onehot)).sum() * (1.0 / n)
+    return nll
+
