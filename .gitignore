@@ -10,4 +10,3 @@ data/*.csv
 data/*.npz
 models/*.joblib
 reports/*.json
-.tmp_backup/
