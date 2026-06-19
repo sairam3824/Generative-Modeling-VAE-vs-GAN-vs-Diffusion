@@ -1,0 +1,23 @@
+HOW TO RUN — Generative Modeling: VAE vs GAN vs Diffusion
+=========================================================
+
+1. Install dependencies:
+       pip install -r requirements.txt
+
+2. Sample the 8-mode ring target distribution:
+       python3 src/generate_data.py
+
+3. Train all three generators and compare (samples + energy distance):
+       python3 src/compare.py
+
+   (Each model can also be run standalone, e.g. python3 src/diffusion.py)
+
+Outputs:
+   reports/samples.png   — real vs VAE vs GAN vs diffusion scatter panels
+   reports/metrics.json  — energy distance to the real distribution (lower=better)
+
+Or just run everything:  ./run.sh
+
+Note: the VAE, GAN, and DDPM diffusion model are all implemented from scratch on
+a NumPy autograd (src/autograd.py) — no PyTorch. Training all three takes ~20s.
+The production swap is PyTorch on image data (conv VAE, DCGAN, U-Net diffusion).
