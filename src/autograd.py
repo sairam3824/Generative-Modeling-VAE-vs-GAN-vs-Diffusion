@@ -46,6 +46,25 @@ class Tensor:
         out._backward = _backward
         return out
 
+    def matmul(self, other):
+        out = Tensor(self.data @ other.data, (self, other))
+
+        def _backward():
+            g_self = out.grad @ np.swapaxes(other.data, -1, -2)
+            g_other = np.swapaxes(self.data, -1, -2) @ out.grad
+            self.grad += _unbroadcast(g_self, self.data.shape)
+            other.grad += _unbroadcast(g_other, other.data.shape)
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Tensor(np.maximum(0, self.data), (self,))
+
+        def _backward():
+            self.grad += (self.data > 0) * out.grad
+        out._backward = _backward
+        return out
+
     # --- graph walk -----------------------------------------------------
     def backward(self):
         topo, seen = [], set()
