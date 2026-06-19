@@ -125,4 +125,4 @@ running on 2-D toy data with a hand-written autograd.
 
 ## License
 
-[MIT](LICENSE) © 2026 Sai Kushal
+[MIT](LICENSE) 
