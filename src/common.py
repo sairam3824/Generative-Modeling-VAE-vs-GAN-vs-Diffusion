@@ -55,3 +55,15 @@ def adam(params):
 def zero_grad(params):
     for p in params:
         p.grad = np.zeros_like(p.data)
+
+
+def energy_distance(X, Y, rng, m=400):
+    """Lower is better: 0 ⇔ same distribution. Energy distance on subsamples."""
+    X = X[rng.choice(len(X), min(m, len(X)), replace=False)]
+    Y = Y[rng.choice(len(Y), min(m, len(Y)), replace=False)]
+
+    def pdist_mean(A, B):
+        d = np.sqrt(((A[:, None, :] - B[None, :, :]) ** 2).sum(-1) + 1e-12)
+        return d.mean()
+    return float(2 * pdist_mean(X, Y) - pdist_mean(X, X) - pdist_mean(Y, Y))
+
